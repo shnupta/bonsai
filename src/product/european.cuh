@@ -13,7 +13,7 @@ namespace bonsai {
   namespace product {
 
     template <class T>
-    class EuropeanCall : Product<T> {
+    class EuropeanCall : IProduct<T> {
       public:
 
         __host__
@@ -23,9 +23,11 @@ namespace bonsai {
             exerciseDate_(exerciseDate),
             settlementDate_(settlementDate) 
         {
+          // Timeline is just the exercise date
           timeline_.resize(1);
           timeline_[0] = exerciseDate;
 
+          // Defline: one sample on the exersice date
           defline_.resize(1);
           defline_[0].numeraire = true;
           defline_[0].forwardMats.resize(1);

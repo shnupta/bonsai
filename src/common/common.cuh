@@ -3,6 +3,7 @@
 namespace bonsai {
   using Time = double;
 
+  // Specification of a Libor rate
   struct RateDef {
     Time start;
     Time end;

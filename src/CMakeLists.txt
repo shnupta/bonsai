@@ -10,6 +10,8 @@ set(BONSAIHEADERS
 	common/container.cuh
 	product/product.cuh
 	product/european.cuh
+	model/model.cuh
+	model/black_scholes.cuh
 	) 
 # set_target_properties(libbonsai PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
