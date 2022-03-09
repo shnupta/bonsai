@@ -2,6 +2,7 @@
 
 #include "../common/common.cuh"
 #include "../common/container.cuh"
+#include "../common/sample.cuh"
 
 namespace bonsai {
   namespace product {
@@ -12,14 +13,13 @@ namespace bonsai {
         __host__ __device__
           virtual const container<Time>& GetTimeline() const = 0; 
         __host__ __device__
-          virtual const container<Time>& GetDefline() const = 0;
+          virtual const container<SampleDef>& GetDefline() const = 0;
 
         __host__
           virtual const container<std::string>& GetPayoffLabels() const = 0;
 
-        // TODO: Don't think I need the ComputePayoffs function here
-        // That should be some sort of kernel function, so as long as I have 
-        // the path and the output container I can calculate them on device
+        // TODO: Define some __device__ only ComputePayoffs function that 
+        // works stuff out thread per thread and accumulates the value
 
         // TODO: What's the point of the copy constructor?
     };
