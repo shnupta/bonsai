@@ -18,8 +18,6 @@ namespace bonsai {
         __host__
           virtual const container<std::string>& GetPayoffLabels() const = 0;
 
-        // TODO: Define some __device__ only ComputePayoffs function that 
-        // works stuff out thread per thread and accumulates the value
         __device__
           virtual void ComputePayoffs(const Scenario<T>& path,
               container<T>& payoffs) const = 0;

@@ -1,5 +1,6 @@
 #include "common/sample.cuh"
 #include "model/black_scholes.cuh"
+#include "product/european.cuh"
 
 using namespace bonsai;
 
