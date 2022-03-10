@@ -34,18 +34,25 @@ namespace bonsai {
           assert(data_ != NULL);
         }
 
+      __host__
+        void clear() {
+          size_ = 0;
+          if (data_ != NULL) delete[] data_;
+        }
+
       __host__ __device__
         int size() const {
           return size_;
         }
 
-      // Bracket getters and setters
+      // Getter (note the const)
       __host__ __device__
-        T operator[](const int i) const {
+        const T& operator[](const int i) const {
           assert(i < size_ || i >= 0);
           return data_[i];  
         }
 
+      // Setter
       __host__ __device__
         T& operator[](const int i) {
           assert(i < size_ || i >= 0);
