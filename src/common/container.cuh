@@ -48,7 +48,7 @@ namespace bonsai {
 
       __host__
         container(const int size, const int internalSize) : size_(size) {
-          data_ = new T[size_]();
+          data_ = new T[size_];
           assert(data_ != NULL);
           for (int i = 0; i < size_; ++i) {
             data_[i] = T(internalSize);

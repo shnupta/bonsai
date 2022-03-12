@@ -63,9 +63,9 @@ namespace bonsai {
   // Batch allocate a collection of samples
   // Path has already been allocated to have size: defline.
   template <class T>
-  inline void AllocatePath(SampleDef const* defline, const int size, 
+  inline void AllocatePath(SampleDef const* defline,
       Scenario<T>& path) {
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < path.size(); ++i) {
       path[i].Allocate(defline[i]);
     }
   }
@@ -73,7 +73,7 @@ namespace bonsai {
   // Batch initialise a collection of samples
   template <class T>
   inline void InitialisePath(Scenario<T>& path) {
-    for (int i = 0; i < path.Size(); ++i) {
+    for (int i = 0; i < path.size(); ++i) {
       path[i].Initialise();
     }
   }
