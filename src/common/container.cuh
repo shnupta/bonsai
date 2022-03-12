@@ -14,15 +14,50 @@ namespace bonsai {
       __host__ 
         container() {};
 
+      __host__
+        container(const container<T>&) = delete;
+
+      __host__
+        container<T>& operator=(const container<T>&) = delete;
+
+      __host__
+        container(container<T>&& c) {
+         data_ = c.data_; 
+         size_ = c.size_;
+
+         c.data_ = NULL;
+         c.size_ = 0;
+        }
+
+      __host__
+        container<T>& operator=(container<T>&& c) {
+         data_ = c.data_; 
+         size_ = c.size_;
+
+         c.data_ = NULL;
+         c.size_ = 0;
+
+         return *this;
+        }
+
       __host__ 
         container(const int size) : size_(size) {
           data_ = new T[size_];
           assert(data_ != NULL);
         }
 
+      __host__
+        container(const int size, const int internalSize) : size_(size) {
+          data_ = new T[size_]();
+          assert(data_ != NULL);
+          for (int i = 0; i < size_; ++i) {
+            data_[i] = T(internalSize);
+          }
+        }
+
       __host__ 
         ~container() {
-          delete[] data_;
+          if (data_ != NULL) delete[] data_;
           size_ = 0;
         }
 
