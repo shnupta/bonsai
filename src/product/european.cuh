@@ -23,7 +23,8 @@ namespace bonsai {
               const Time settlementDate)
             : strike_(strike),
               exerciseDate_(exerciseDate),
-              settlementDate_(settlementDate) 
+              settlementDate_(settlementDate),
+              labels_(1)
           {
             // Timeline is just the exercise date
             timeline_.resize(1);
