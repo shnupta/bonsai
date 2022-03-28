@@ -1,5 +1,9 @@
 #pragma once
 
+#include "host_device_transfer.cuh"
+
+#include <helper_cuda.h>
+
 #include <stdexcept>
 #include <assert.h>
 
@@ -9,7 +13,7 @@ namespace bonsai {
   // Usable both on host and device but must be created on host then copied
   // to device memory
   template <class T>
-  class container {
+  class container : RequiresHostDeviceTransfer<container<T>> {
     public:
       __host__ 
         container() {};
@@ -83,16 +87,55 @@ namespace bonsai {
       // Getter (note the const)
       __host__ __device__
         const T& operator[](const int i) const {
-          assert(i < size_ || i >= 0);
+          assert(i < size_ && i >= 0);
           return data_[i];  
         }
 
       // Setter
       __host__ __device__
         T& operator[](const int i) {
-          assert(i < size_ || i >= 0);
+          assert(i < size_ && i >= 0);
           return data_[i];  
         }
+
+
+        /// RequiresHostToDeviceTransfer ///
+
+        __host__
+          void TransferHostToDevice(container<T>* dev) const override {
+            // Allocate memory on device for the items of this container
+            // TODO: See example on website to do this
+            T* dev_data;
+            checkCudaErrors(cudaMalloc((void**) &dev_data, 
+                  size_ * sizeof(T)));
+            // If we have to copy pointers of the internal object as well
+            if (requires_host_device_transfer<T>()) {
+              for (int i = 0; i < size_; ++i) {
+                // Cast so that we can call relevant transfer functions
+                // Bit dodgy with the cast but I can't get the constraints
+                // on a trait to show a type requires manual transfer at 
+                // compile time
+                RequiresHostDeviceTransfer<T>* item = 
+                  reinterpret_cast<RequiresHostDeviceTransfer<T>*>(&data_[i]);
+                item->TransferHostToDevice(&dev_data[i]);
+              }
+            } else {
+              // Copy all items in data
+              checkCudaErrors(cudaMemcpy(dev_data, data_, size_ * sizeof(T),
+                    cudaMemcpyHostToDevice));
+            }
+            // Copy the pointer to memory location from the local to the new
+            checkCudaErrors(cudaMemcpy(&(dev->data_), &dev_data, 
+                  sizeof(T*), cudaMemcpyHostToDevice));
+            // Copy value of size
+            checkCudaErrors(cudaMemcpy(&dev->size_, &size_, sizeof(int),
+                  cudaMemcpyHostToDevice));
+          }
+
+        __host__
+          void TransferDeviceToHost(container<T>* dev) const override {
+
+          }
 
     private:
       int size_ = 0;

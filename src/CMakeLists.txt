@@ -8,6 +8,7 @@ set(BONSAIHEADERS
 	common/common.cuh
 	common/sample.cuh
 	common/container.cuh
+	common/host_device_transfer.cuh
 	product/product.cuh
 	product/european.cuh
 	model/model.cuh

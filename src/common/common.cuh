@@ -5,6 +5,7 @@ namespace bonsai {
   Time SYSTEM_TIME = 0.0;
 
   // Specification of a Libor rate
+  // TODO: Maybe move this into a different file?
   struct RateDef {
     Time start;
     Time end;

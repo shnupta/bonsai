@@ -7,6 +7,7 @@
 namespace bonsai {
   namespace rng {
     class SobolRng : IRng {
+      // TODO
 
     };
   } // namespace rng

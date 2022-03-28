@@ -2,6 +2,7 @@
 
 #include "model.cuh"
 #include "../common/common.cuh"
+#include "../common/host_device_transfer.cuh"
 
 #include <cmath>
 
@@ -9,7 +10,8 @@ namespace bonsai {
   namespace model {
 
     template <class T>
-    class BlackScholesModel : IModel<T> {
+    class BlackScholesModel : IModel<T>, 
+      RequiresHostDeviceTransfer<BlackScholesModel<T>> {
       public:
         
         template <class U>
@@ -61,11 +63,12 @@ namespace bonsai {
             for (int i = 0; i < prdTimeline.size(); ++i) {
               if (prdTimeline[i] > SYSTEM_TIME) count++;
             }
-            timeline_.resize(count);
+            timeline_.resize(count + 1);
+            timeline_[0] = SYSTEM_TIME;
             count = 0;
             for (int i = 0; i < prdTimeline.size(); ++i) {
               if (prdTimeline[i] > SYSTEM_TIME) {
-                timeline_[0] = prdTimeline[i];
+                timeline_[i + 1] = prdTimeline[i];
                 count++;
               }
             }
@@ -106,7 +109,7 @@ namespace bonsai {
             }
 
             // Precompute the forwards, discounts and libors over the timeline
-            const int m = timeline_.size();
+            const int m = prdTimeline.size();
             for (int i = 0; i < m; ++i) {
               if (prdDefline[i].numeraire) {
                 if (isSpotMeasure_) {
@@ -168,6 +171,17 @@ namespace bonsai {
               FillScenario(index, spot, path[index], (*defline_)[index]);
               ++index;
             }
+          }
+
+        // TODO
+        __host__
+          void TransferHostToDevice(BlackScholesModel<T>* dev) const override {
+
+          }
+
+        __host__
+          void TransferDeviceToHost(BlackScholesModel<T>* host) const override {
+
           }
 
       private:
