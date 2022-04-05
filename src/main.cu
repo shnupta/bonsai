@@ -15,7 +15,8 @@ using namespace bonsai;
 
 // Test code
 
-__global__ void TestKernel(container<container<double>>* c) {
+__global__ void TestKernel(container<container<double> >* c) {
+  (*c)[0][0] = 96;
   printf("c[0][0] = %f\n", (*c)[0][0]);
   printf("c[1][0] = %f\n", (*c)[1][0]);
 }
@@ -66,6 +67,10 @@ int main() {
   c1.TransferHostToDevice(c2);
 
   TestKernel<<<1,1>>>(c2);
+
+  c1.TransferDeviceToHost(c2);
+  printf("c1[0][0] = %f\n", c1[0][0]);
+  printf("c1[1][0] = %f\n", c1[1][0]);
   cudaDeviceSynchronize();
 
   return 0;

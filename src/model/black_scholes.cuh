@@ -179,8 +179,9 @@ namespace bonsai {
 
           }
 
+        // TODO
         __host__
-          void TransferDeviceToHost(BlackScholesModel<T>* host) const override {
+          void TransferDeviceToHost(BlackScholesModel<T>* dev) override {
 
           }
 

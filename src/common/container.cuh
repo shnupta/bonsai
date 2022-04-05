@@ -104,7 +104,6 @@ namespace bonsai {
         __host__
           void TransferHostToDevice(container<T>* dev) const override {
             // Allocate memory on device for the items of this container
-            // TODO: See example on website to do this
             T* dev_data;
             checkCudaErrors(cudaMalloc((void**) &dev_data, 
                   size_ * sizeof(T)));
@@ -133,8 +132,28 @@ namespace bonsai {
           }
 
         __host__
-          void TransferDeviceToHost(container<T>* dev) const override {
-
+          void TransferDeviceToHost(container<T>* dev) override {
+            int old_size = size_;
+            // Copy size
+            checkCudaErrors(cudaMemcpy(&size_, &dev->size_, sizeof(int), 
+                  cudaMemcpyDeviceToHost));
+            assert(size_ == old_size);
+            T* dev_data;
+            // Copy pointer
+            checkCudaErrors(cudaMemcpy(&dev_data, &(dev->data_), sizeof(T*),
+                  cudaMemcpyDeviceToHost));
+            if (requires_host_device_transfer<T>()) {
+              for (int i = 0; i < size_; ++i) {
+                RequiresHostDeviceTransfer<T>* item = 
+                  reinterpret_cast<RequiresHostDeviceTransfer<T>*>(
+                      &(data_[i]));
+                item->TransferDeviceToHost(&dev_data[i]);
+              }
+            } else {
+              // Just copy data at the pointer
+              checkCudaErrors(cudaMemcpy(data_, dev_data, size_ * sizeof(T),
+                    cudaMemcpyDeviceToHost));
+            }
           }
 
     private:

@@ -10,7 +10,7 @@ namespace bonsai {
     class RequiresHostDeviceTransfer {
       public:
         __host__ virtual void TransferHostToDevice(T*) const = 0;
-        __host__ virtual void TransferDeviceToHost(T*) const = 0;
+        __host__ virtual void TransferDeviceToHost(T*) = 0;
     };
 
 
