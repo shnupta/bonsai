@@ -2,7 +2,6 @@
 
 #include "model.cuh"
 #include "../common/common.cuh"
-#include "../common/host_device_transfer.cuh"
 
 #include <cmath>
 
@@ -10,25 +9,36 @@ namespace bonsai {
   namespace model {
 
     template <class T>
-    class BlackScholesModel : IModel<T>, 
-      RequiresHostDeviceTransfer<BlackScholesModel<T>> {
+    class BlackScholesModel : IModel<T> {
       public:
         
         template <class U>
-        __host__
+        __host__ __device__
         BlackScholesModel(const U spot, const U vol,
             const bool isSpotMeasure, const U rate = U(0.0),
             const U dividendYield = U(0.0))
           : spot_(spot), vol_(vol), rate_(rate), dividendYield_(dividendYield),
             isSpotMeasure_(isSpotMeasure), parameters_(4), parameterLabels_(4)
         {
-          parameterLabels_[0] = "spot";
-          parameterLabels_[1] = "vol";
-          parameterLabels_[2] = "rate";
-          parameterLabels_[3] = "dividend yield";
+          /* parameterLabels_[0] = "spot"; */
+          /* parameterLabels_[1] = "vol"; */
+          /* parameterLabels_[2] = "rate"; */
+          /* parameterLabels_[3] = "dividend yield"; */
 
           SetParameterPointers();
         }
+
+        __host__ __device__
+          BlackScholesModel(BlackScholesModel<T>& bsm) = delete;
+
+        __host__ __device__
+          BlackScholesModel<T>& operator=(BlackScholesModel<T>& bsm) = delete;
+
+        /* __host__ __device__ */
+          BlackScholesModel<T>& operator=(BlackScholesModel<T>&& bsm) = default;
+
+        /* __host__ __device__ */
+          BlackScholesModel(BlackScholesModel<T>&& bsm) = default;
 
         __host__ __device__
           const T GetSpot() const {
@@ -46,7 +56,7 @@ namespace bonsai {
           const T GetDividendYield() const {
             return dividendYield_;
           }
-        __host__
+        __host__ __device__
           const container<T*>& GetParameters() override {
             return parameters_;
           } 
@@ -55,7 +65,7 @@ namespace bonsai {
             return parameterLabels_;
           }
 
-        __host__
+        __host__ __device__
           void Allocate(const container<Time>& prdTimeline,
               const container<SampleDef>& prdDefline) override {
             timeline_.clear();
@@ -91,7 +101,7 @@ namespace bonsai {
             }
           }
 
-        __host__
+        __host__ __device__
           void Initialise(const container<Time>& prdTimeline,
               const container<SampleDef>& prdDefline) override {
             const T mu = rate_ - dividendYield_;
@@ -173,20 +183,8 @@ namespace bonsai {
             }
           }
 
-        // TODO
-        __host__
-          void TransferHostToDevice(BlackScholesModel<T>* dev) const override {
-
-          }
-
-        // TODO
-        __host__
-          void TransferDeviceToHost(BlackScholesModel<T>* dev) override {
-
-          }
-
       private:
-        __host__
+        __host__ __device__
           void SetParameterPointers() {
             parameters_[0] = &spot_;
             parameters_[1] = &vol_;
@@ -225,11 +223,11 @@ namespace bonsai {
 
         // false = risk neutral measure
         // true = spot measure
-        const bool isSpotMeasure_;
+        bool isSpotMeasure_ = false;
 
         // Simulation timeline = today + product timeline
         container<Time> timeline_;
-        bool isTodayOnTimeline_;
+        bool isTodayOnTimeline_ = true;
         
         // Reference to product's defline
         const container<SampleDef>* defline_;

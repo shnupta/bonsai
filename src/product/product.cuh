@@ -15,7 +15,7 @@ namespace bonsai {
         __host__ __device__
           virtual const container<SampleDef>& GetDefline() const = 0;
 
-        __host__
+        __host__ __device__
           virtual const container<std::string>& GetPayoffLabels() const = 0;
 
         __device__

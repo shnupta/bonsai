@@ -18,7 +18,7 @@ namespace bonsai {
     class EuropeanCall : IProduct<T> {
       public:
 
-        __host__
+        __host__ __device__
           EuropeanCall(const double strike, const Time exerciseDate,
               const Time settlementDate)
             : strike_(strike),
@@ -38,20 +38,20 @@ namespace bonsai {
             defline_[0].discountMats.resize(1);
             defline_[0].discountMats[0] = settlementDate_;
 
-            std::ostringstream ss;
-            ss.precision(2);
-            ss << std::fixed;
-            if (settlementDate_ == exerciseDate_) {
-              ss << "call " << strike << " " << exerciseDate_;
-            } else {
-              ss << "call " << strike << " " << exerciseDate_
-                << " " << settlementDate_;
-            }
-            labels_.resize(1);
-            labels_[0] = ss.str();
+            /* std::ostringstream ss; */
+            /* ss.precision(2); */
+            /* ss << std::fixed; */
+            /* if (settlementDate_ == exerciseDate_) { */
+            /*   ss << "call " << strike << " " << exerciseDate_; */
+            /* } else { */
+            /*   ss << "call " << strike << " " << exerciseDate_ */
+            /*     << " " << settlementDate_; */
+            /* } */
+            /* labels_.resize(1); */
+            /* labels_[0] = ss.str(); */
           }
 
-        __host__ 
+        __host__ __device__
           EuropeanCall(const double strike, const Time exerciseDate)
             : EuropeanCall(strike, exerciseDate, exerciseDate) {}
 
@@ -65,7 +65,7 @@ namespace bonsai {
             return defline_;
           }
 
-        __host__
+        __host__ __device__
           const container<std::string>& GetPayoffLabels() const override {
             return labels_;
           }
