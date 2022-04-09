@@ -90,6 +90,7 @@ namespace bonsai {
             drifts_.resize(timeline_.size() - 1);
 
             const int n = prdTimeline.size();
+            // TODO: Check the resize for 2D containers
             numeraires_.resize(n);
             discounts_.resize(n);
             forwardFactors_.resize(n);

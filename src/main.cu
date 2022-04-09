@@ -16,8 +16,7 @@ using namespace bonsai;
 
 // Test code
 
-__global__ void AllocateInitialise(Scenario<double>** path,
-    model::BlackScholesModel<double>** bsm, 
+__global__ void AllocateInitialise(model::BlackScholesModel<double>** bsm, 
     double spot, double vol, bool isSpotMeasure, double rate,
     product::EuropeanCall<double>** call, double strike, double ttm) {
 
@@ -26,16 +25,12 @@ __global__ void AllocateInitialise(Scenario<double>** path,
 
   *bsm = new model::BlackScholesModel<double>(spot, vol, isSpotMeasure, rate);
   *call = new product::EuropeanCall<double>(strike, ttm);
-  *path = new Scenario<double>();
 
   (*bsm)->Allocate((*call)->GetTimeline(), (*call)->GetDefline());
   (*bsm)->Initialise((*call)->GetTimeline(), (*call)->GetDefline());
-  /* AllocatePath((*call)->GetDefline(), **path); */
-  /* InitialisePath(**path); */
 }
 
-__global__ void Value(Scenario<double>** path, 
-    model::BlackScholesModel<double>** bsm,
+__global__ void Value(model::BlackScholesModel<double>** bsm,
     product::EuropeanCall<double>** call, double* gauss, int numPaths,
     int numPayoffs, double* results) {
   Scenario<double> lpath;
@@ -46,8 +41,6 @@ __global__ void Value(Scenario<double>** path,
 
   if (idx < numPaths) {
     const int payoffIdx = idx * numPayoffs;
-    /* (*bsm)->GeneratePath(&gauss[payoffIdx], **path); */
-    /* (*call)->ComputePayoffs(**path, &results[payoffIdx]); */
     (*bsm)->GeneratePath(&gauss[payoffIdx], lpath);
     (*call)->ComputePayoffs(lpath, &results[payoffIdx]);
   }
@@ -75,13 +68,10 @@ int main() {
   const int numPayoffs = host_call.GetPayoffLabels().size();
   const int simDim = host_bsm.GetSimulationDimension();
 
-  Scenario<double>** dev_path;
   model::BlackScholesModel<double>** dev_bsm;
   product::EuropeanCall<double>** dev_call;
   double* dev_results;
 
-  checkCudaErrors(cudaMalloc((void**) &dev_path,
-        sizeof(Scenario<double>*)));
   checkCudaErrors(cudaMalloc((void**) &dev_bsm,
         sizeof(model::BlackScholesModel<double>*)));
   checkCudaErrors(cudaMalloc((void**) &dev_call,
@@ -89,7 +79,7 @@ int main() {
   checkCudaErrors(cudaMalloc((void**) &dev_results,
         numPaths * numPayoffs * sizeof(double)));
 
-  AllocateInitialise<<<1,1>>>(dev_path, dev_bsm, spot, vol, isSpotMeasure, rate,
+  AllocateInitialise<<<1,1>>>(dev_bsm, spot, vol, isSpotMeasure, rate,
       dev_call, strike, ttm);
   cudaDeviceSynchronize();
   getLastCudaError("AllocateInitialise");
@@ -113,7 +103,7 @@ int main() {
   printf("Blocks = %d\n", blocks);
   printf("Kernel start\n");
   auto start = std::chrono::steady_clock::now();
-  Value<<<blocks, THREADBLOCK_SIZE>>>(dev_path, dev_bsm, dev_call, devZs, numPaths, 
+  Value<<<blocks, THREADBLOCK_SIZE>>>(dev_bsm, dev_call, devZs, numPaths, 
       numPayoffs, dev_results);
   cudaDeviceSynchronize();
   getLastCudaError("Value kernel failed");
@@ -149,6 +139,7 @@ int main() {
   cudaFree(devZs);
   cudaFree(dev_bsm);
   cudaFree(dev_call);
+  cudaFree(dev_results);
 
   return 0;
 }
