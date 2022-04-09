@@ -20,7 +20,7 @@ namespace bonsai {
 
         __device__
           virtual void ComputePayoffs(const Scenario<T>& path,
-              container<T>& payoffs) const = 0;
+              T* payoffs) const = 0;
 
         // TODO: What's the point of the copy constructor?
     };

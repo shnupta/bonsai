@@ -166,7 +166,7 @@ namespace bonsai {
         // So that each thread has a container of _timeSteps_ random variables,
         // one from each dimension of Sobol
         __device__
-          void GeneratePath(const container<double>& gaussVec,
+          void GeneratePath(double* gaussVec,
               Scenario<T>& path) const override {
             T spot = spot_;
             int index = 0;

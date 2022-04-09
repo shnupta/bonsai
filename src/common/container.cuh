@@ -60,6 +60,7 @@ namespace bonsai {
 
       __host__ __device__// TODO: Double check 
         ~container() {
+          /* printf("FUCK"); */
           if (data_ != NULL) delete[] data_;
           size_ = 0;
         }
@@ -95,6 +96,11 @@ namespace bonsai {
         T& operator[](const int i) {
           assert(i < size_ && i >= 0);
           return data_[i];  
+        }
+
+      __host__ __device__
+        void fill(T value) {
+          memset(data_, value, size_ * sizeof(T));
         }
 
     private:

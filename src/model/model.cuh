@@ -26,7 +26,7 @@ namespace bonsai {
         // Simulate a path whilst consuming the container<double> of independent
         // gaussians
         __device__
-          virtual void GeneratePath(const container<double>& gaussVec,
+          virtual void GeneratePath(double* gaussVec,
               Scenario<T>& path) const = 0;
 
         // TODO: Check if I need these functions on __device__

@@ -74,7 +74,7 @@ namespace bonsai {
         // simulation
         __device__
           void ComputePayoffs(const Scenario<T>& path,
-              container<T>& payoffs) const override {
+              T* payoffs) const override {
             payoffs[0] = max(path[0].forwards[0] - strike_, 0.0)
               * path[0].discounts[0] / path[0].numeraire;
           }

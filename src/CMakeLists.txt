@@ -1,7 +1,7 @@
 find_package(CUDA REQUIRED)
 include_directories("${CUDA_INCLUDE_DIRS}")
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -rdc=true")
+# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -rdc=true")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -rdc=true -G -g") # Debug
 
 set(BONSAIHEADERS

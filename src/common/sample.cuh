@@ -36,18 +36,18 @@ namespace bonsai {
     container<T> libors;
 
     // Allocate given a corresponding definition
-    __host__ void Allocate(const SampleDef& def) {
-      forwards.resize(def.forwardMats.size() * sizeof(T));
-      discounts.resize(def.discountMats.size() * sizeof(T));
-      libors.resize(def.liborDefs.size() * sizeof(T));
+    __host__ __device__ void Allocate(const SampleDef& def) {
+      forwards.resize(def.forwardMats.size());
+      discounts.resize(def.discountMats.size());
+      libors.resize(def.liborDefs.size());
     }
 
     // Initialise defaults
-    __host__ void Initialise() {
+    __host__ __device__ void Initialise() {
       numeraire = T(1.0);
-      memset(forwards, T(100.0), forwards.size() * sizeof(T));
-      memset(discounts, T(1.0), discounts.size() * sizeof(T));
-      memset(libors, T(0.0), libors.size() * sizeof(T));
+      forwards.fill(T(100.0));
+      discounts.fill(T(1.0));
+      libors.fill(T(0.0));
     }
   };
 
@@ -63,16 +63,19 @@ namespace bonsai {
   // Batch allocate a collection of samples
   // Path has already been allocated to have size: defline.
   template <class T>
-  inline void AllocatePath(SampleDef const* defline,
+  __host__ __device__
+  /*inline*/ void AllocatePath(const container<SampleDef>& defline,
       Scenario<T>& path) {
-    for (int i = 0; i < path.size(); ++i) {
+    path.resize(defline.size());
+    for (int i = 0; i < defline.size(); ++i) {
       path[i].Allocate(defline[i]);
     }
   }
 
   // Batch initialise a collection of samples
   template <class T>
-  inline void InitialisePath(Scenario<T>& path) {
+  __host__ __device__
+  /*inline*/ void InitialisePath(Scenario<T>& path) {
     for (int i = 0; i < path.size(); ++i) {
       path[i].Initialise();
     }

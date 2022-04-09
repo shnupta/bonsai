@@ -7,7 +7,8 @@
 #include <helper_cuda.h>
 
 #include <stdio.h>
-#include <utility>
+#include <chrono>
+#include <iostream>
 
 #define THREADBLOCK_SIZE 800
 
@@ -15,40 +16,44 @@ using namespace bonsai;
 
 // Test code
 
-__global__ void AllocateInitialise(model::BlackScholesModel<double>** bsm, 
+__global__ void AllocateInitialise(Scenario<double>** path,
+    model::BlackScholesModel<double>** bsm, 
     double spot, double vol, bool isSpotMeasure, double rate,
     product::EuropeanCall<double>** call, double strike, double ttm) {
 
-  int id = threadIdx.x + blockIdx.x * gridDim.x;
+  int id = threadIdx.x + blockIdx.x * blockDim.x;
   if (id != 0) return;
 
   *bsm = new model::BlackScholesModel<double>(spot, vol, isSpotMeasure, rate);
   *call = new product::EuropeanCall<double>(strike, ttm);
+  *path = new Scenario<double>();
 
   (*bsm)->Allocate((*call)->GetTimeline(), (*call)->GetDefline());
   (*bsm)->Initialise((*call)->GetTimeline(), (*call)->GetDefline());
+  /* AllocatePath((*call)->GetDefline(), **path); */
+  /* InitialisePath(**path); */
 }
 
-__global__ void AllocateResults(container<container<double> >**results,
-    int numPaths, product::EuropeanCall<double>** call) {
+__global__ void Value(Scenario<double>** path, 
+    model::BlackScholesModel<double>** bsm,
+    product::EuropeanCall<double>** call, double* gauss, int numPaths,
+    int numPayoffs, double* results) {
+  Scenario<double> lpath;
+  AllocatePath((*call)->GetDefline(), lpath);
+  InitialisePath(lpath);
 
-  int id = threadIdx.x + blockIdx.x * gridDim.x;
-  if (id != 0) return;
+  int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-  *results = new container<container<double> >(numPaths);
+  if (idx < numPaths) {
+    const int payoffIdx = idx * numPayoffs;
+    /* (*bsm)->GeneratePath(&gauss[payoffIdx], **path); */
+    /* (*call)->ComputePayoffs(**path, &results[payoffIdx]); */
+    (*bsm)->GeneratePath(&gauss[payoffIdx], lpath);
+    (*call)->ComputePayoffs(lpath, &results[payoffIdx]);
+  }
 }
 
-
-// TODO
-__global__ void Value(model::BlackScholesModel<double>** bsm,
-    product::EuropeanCall<double>** call, double* gauss) {
-
-}
-
-__global__ void TestKernel(model::BlackScholesModel<double>** bsmp) {
-  auto* bsm = *bsmp;
-  int simdim = bsm->GetSimulationDimension();
-  printf("simdim = %d\n", simdim);
+__global__ void TestKernel() {
 }
 
 
@@ -67,35 +72,30 @@ int main() {
   host_bsm.Allocate(host_call.GetTimeline(), host_call.GetDefline());
   host_bsm.Initialise(host_call.GetTimeline(), host_call.GetDefline());
 
+  const int numPayoffs = host_call.GetPayoffLabels().size();
   const int simDim = host_bsm.GetSimulationDimension();
 
+  Scenario<double>** dev_path;
   model::BlackScholesModel<double>** dev_bsm;
   product::EuropeanCall<double>** dev_call;
-  // TODO: Just have an array of doubles for the result, don't need to worry
-  // about size I think
-  container<container<double> >** dev_results;
+  double* dev_results;
 
+  checkCudaErrors(cudaMalloc((void**) &dev_path,
+        sizeof(Scenario<double>*)));
   checkCudaErrors(cudaMalloc((void**) &dev_bsm,
         sizeof(model::BlackScholesModel<double>*)));
   checkCudaErrors(cudaMalloc((void**) &dev_call,
         sizeof(product::EuropeanCall<double>*)));
   checkCudaErrors(cudaMalloc((void**) &dev_results,
-        sizeof(container<container<double> >*)));
+        numPaths * numPayoffs * sizeof(double)));
 
-  AllocateInitialise<<<1,1>>>(dev_bsm, spot, vol, isSpotMeasure, rate,
+  AllocateInitialise<<<1,1>>>(dev_path, dev_bsm, spot, vol, isSpotMeasure, rate,
       dev_call, strike, ttm);
   cudaDeviceSynchronize();
   getLastCudaError("AllocateInitialise");
-  AllocateInitialise<<<1,1>>>(dev_bsm, spot, vol, isSpotMeasure, rate,
-      dev_call, strike, ttm);
-  cudaDeviceSynchronize();
-  getLastCudaError("AllocateInitialise");
-  AllocateResults<<<1,1>>>(dev_results, numPaths, dev_call);
-  cudaDeviceSynchronize();
-  getLastCudaError("AllocateResults");
 
   /// Random variable generation ///
-  const int totalThreads = numPaths * THREADBLOCK_SIZE;
+  /* const int totalThreads = numPaths * THREADBLOCK_SIZE; */
   const int randomVarsCount = numPaths * simDim;
   // Need to allocate numPaths * simDim random variables
   curandGenerator_t gen;
@@ -108,14 +108,45 @@ int main() {
   curandGenerateNormalDouble(gen, devZs, randomVarsCount, 0, 1);
   /// ///
 
-  cudaFree(devZs);
-  curandDestroyGenerator(gen);
+  const int blocks = (numPaths / THREADBLOCK_SIZE) + 1;
 
-
-  TestKernel<<<1,1>>>(dev_bsm);
+  printf("Blocks = %d\n", blocks);
+  printf("Kernel start\n");
+  auto start = std::chrono::steady_clock::now();
+  Value<<<blocks, THREADBLOCK_SIZE>>>(dev_path, dev_bsm, dev_call, devZs, numPaths, 
+      numPayoffs, dev_results);
   cudaDeviceSynchronize();
-  getLastCudaError("Test kernel failed");
+  getLastCudaError("Value kernel failed");
+  auto end = std::chrono::steady_clock::now();
+  printf("Kernel end\n");
 
+  double results[numPaths * numPayoffs];
+  checkCudaErrors(cudaMemcpy(results, dev_results,
+        numPaths * numPayoffs * sizeof(double), cudaMemcpyDeviceToHost));
+
+  double payoffs[numPayoffs];
+
+  for (int i = 0; i < numPayoffs; ++i) {
+   double val = 0;
+   for (int j = 0; j < numPaths; j += numPayoffs) {
+     val += results[j];
+   }
+   payoffs[i] = val / numPaths;
+  }
+
+  auto final_end = std::chrono::steady_clock::now();
+
+  printf("final price = %f\n", payoffs[0]);
+  std::cout << "Value kernel time = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+
+  start = std::chrono::steady_clock::now();
+  TestKernel<<<blocks, THREADBLOCK_SIZE>>>();
+  end = std::chrono::steady_clock::now();
+  std::cout << "Test kernel time = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+
+
+  curandDestroyGenerator(gen);
+  cudaFree(devZs);
   cudaFree(dev_bsm);
   cudaFree(dev_call);
 
