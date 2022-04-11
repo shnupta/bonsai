@@ -2,6 +2,7 @@
 #include "common/container.cuh"
 #include "model/black_scholes.cuh"
 #include "product/european.cuh"
+#include "product/binary_asian.cuh"
 
 #include <curand.h>
 #include <helper_cuda.h>
@@ -41,7 +42,7 @@ __global__ void Value(model::BlackScholesModel<double>** bsm,
 
   if (idx < numPaths) {
     const int payoffIdx = idx * numPayoffs;
-    (*bsm)->GeneratePath(&gauss[payoffIdx], lpath);
+    (*bsm)->GeneratePath(&gauss[idx], lpath);
     (*call)->ComputePayoffs(lpath, &results[payoffIdx]);
   }
 }

@@ -8,9 +8,6 @@
 
 #include <sstream>
 
-#define ONE_HOUR 0.000114469
-#define ONE_DAY 0.003773585
-
 namespace bonsai {
   namespace product {
 

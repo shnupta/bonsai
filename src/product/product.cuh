@@ -4,6 +4,10 @@
 #include "../common/container.cuh"
 #include "../common/sample.cuh"
 
+#define ONE_HOUR 0.000114469
+#define ONE_DAY 0.003773585
+#define ONE_MONTH 0.08333333333
+
 namespace bonsai {
   namespace product {
 
@@ -21,8 +25,6 @@ namespace bonsai {
         __device__
           virtual void ComputePayoffs(const Scenario<T>& path,
               T* payoffs) const = 0;
-
-        // TODO: What's the point of the copy constructor?
     };
 
   } // namespace product

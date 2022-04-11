@@ -10,6 +10,7 @@ set(BONSAIHEADERS
 	common/container.cuh
 	product/product.cuh
 	product/european.cuh
+	product/binary_asian.cuh
 	model/model.cuh
 	model/black_scholes.cuh
 	) 
